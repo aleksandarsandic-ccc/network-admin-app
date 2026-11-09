@@ -1,0 +1,14 @@
+# Backend
+network.db
+*.db
+.env
+venv/
+__pycache__/
+**/venv/*
+**/__pycache__/*
+
+# Frontend
+node_modules/
+dist/
+**/node_modules/*
+**/dist/*

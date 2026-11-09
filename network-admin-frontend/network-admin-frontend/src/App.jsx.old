@@ -1,0 +1,80 @@
+import DeviceTable from './components/DeviceTable';
+import { useState, useEffect } from 'react';
+
+function App() {
+  const [devices, setDevices] = useState([]);
+  const [ipRange, setIpRange] = useState('');
+  const [isScanning, setIsScanning] = useState(false);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/devices')
+      .then(response => response.json())
+      .then(data => setDevices(data))
+      .catch(error => console.error('Error fetching devices:', error));
+  }, []);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/network/suggested-range')
+      .then(response => response.json())
+      .then(data => setIpRange(data.suggested_range))
+      .catch(error => console.error('Error fetching range:', error));
+  }, []);
+
+  function handleScan() {
+    setIsScanning(true); 
+
+    fetch(`http://localhost:8000/devices/scan?ip_range=${encodeURIComponent(ipRange)}`, { method: 'POST' })
+      .then(response => response.json())
+      .then(data => {
+        console.log('Scan završen:', data);
+        
+        return fetch('http://localhost:8000/devices');
+      })
+      .then(response => response.json())
+      .then(data => setDevices(data)) 
+      .catch(error => console.error('Error scanning:', error))
+      .finally(() => setIsScanning(false)); 
+  }
+
+  return (
+    <div className="p-8">
+      <h1 className="text-2xl font-bold mb-4">Mrežni uređaji</h1>
+      
+      {/* Visual Indicator dok traje skeniranje */}
+      {isScanning ? (
+        <div className="p-6 border rounded text-center text-blue-600 bg-blue-50 animate-pulse mb-4">
+          Skeniranje u toku... Molimo sačekajte.
+        </div>
+      ) : (
+        <DeviceTable devices={devices} />
+      )}
+
+      <div className="mt-6 flex items-center gap-4">
+        <div>
+          <label htmlFor="ipRange" className="block text-sm font-medium text-gray-700 mb-1">
+            IP opseg za skeniranje:
+          </label>
+          <input
+            id="ipRange"
+            type="text"
+            value={ipRange}
+            onChange={(e) => setIpRange(e.target.value)}
+            disabled={isScanning}
+            placeholder="npr. 192.168.1.0/24"
+            className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+          />
+        </div>
+
+        <button 
+          onClick={handleScan} 
+          disabled={isScanning}
+          className="self-end bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+        >
+          {isScanning ? 'Skeniranje...' : 'Skeniraj mrežu'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default App;
